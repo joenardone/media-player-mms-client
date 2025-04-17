@@ -1,0 +1,126 @@
+body {
+    background: #1a1a1a;
+    color: white;
+    font-family: sans-serif;
+    padding: 2rem;
+    margin: 0;
+    overflow-x: hidden;
+  }
+  
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+  
+  #title {
+    font-size: 2rem;
+    font-weight: bold;
+  }
+  
+  #controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  button,
+  select {
+    padding: 0.5rem 1rem;
+    margin: 0;
+    font-size: 1rem;
+  }
+  
+  #albumArt {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    margin: 1rem auto 0;
+    border-radius: 8px;
+    border: 2px solid #444;
+  }
+  
+  #trackInfo {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 1.2rem;
+  }
+  
+  #progressContainer {
+    width: 80%;
+    height: 10px;
+    background: #555;
+    margin: 1rem auto;
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  
+  #progressBar {
+    height: 100%;
+    background: limegreen;
+    width: 0%;
+  }
+  
+  #browseContainer {
+    margin-top: 2rem;
+    text-align: left;
+  }
+  
+  #browseItems {
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+    background: #222;
+    border-radius: 8px;
+    border: 1px solid #444;
+  }
+  
+  .browse-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    background: #333;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    transition: background 0.2s;
+  }
+  
+  .browse-item:hover {
+    background: #444;
+  }
+  
+  .browse-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    margin-right: 1rem;
+    border-radius: 4px;
+  }
+  
+  .browse-item span {
+    flex-grow: 1;
+    color: white;
+    font-size: 1rem;
+  }
+  
+  #browsePath {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    background: #333;
+    color: white;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .path-segment {
+    cursor: pointer;
+    color: #4af;
+    text-decoration: underline;
+    margin-right: 0.5rem;
+  }
+  
+  .path-segment:hover {
+    text-decoration: none;
+  }

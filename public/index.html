@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Autonomic MMS-5E Controller</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header>
+    <div id="title">Autonomic MMS-5E Controller</div>
+    <div id="controls">
+      <select id="instance" onchange="instanceChanged()"></select>
+      <button onclick="toggleBrowse()">📂 Browse</button>
+    </div>
+  </header>
+
+  <img id="albumArt" src="" alt="Album Art" />
+  <div id="trackInfo">Loading...</div>
+  <div id="progressContainer">
+    <div id="progressBar"></div>
+  </div>
+  <div id="timeInfo" style="text-align: center;">0:00 / 0:00</div>
+
+  <div>
+    <button onclick="sendCommand('SkipPrevious')">⏮️ Back</button>
+    <button onclick="sendCommand('Play')">▶️ Play</button>
+    <button onclick="sendCommand('Pause')">⏸️ Pause</button>
+    <button onclick="sendCommand('Stop')">⏹️ Stop</button>
+    <button onclick="sendCommand('SkipNext')">⏭️ Skip</button>
+  </div>
+
+  <div id="browseContainer" style="display: none; margin-top: 2rem; text-align: left;">
+    <h2>Browse</h2>
+    <div id="browsePath" class="breadcrumb"></div>
+    <div id="browseItems" style="max-height: 500px; overflow-y: auto;"></div>
+  </div>
+
+  <script src="scripts.js"></script>
+</body>
+
+</html>
