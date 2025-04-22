@@ -10,7 +10,7 @@ let albumArtCache = {}; // Cache for album art URLs
 let isUpdatingQueue = false;
 let scrollTimeout = null;
 let isProcessingQueue = false;
-let seekAvailable = false; // Global variable for seek availability
+let isSeekAvailable = false; // Global variable for seek availability
 let nowPlayingGuid = null; // Global variable for the current NowPlaying GUID
 
 const albumArtQueue = new Map(); // Use a Map to manage the queue
@@ -60,60 +60,47 @@ muteButton.onclick = () => {
     muteButton.textContent = isMuted ? '🔊' : '🔇';
 };
 
-volumeSlider.addEventListener('input', () => {
-    const value = volumeSlider.value; // Get the current volume value (0-50)
-    const percentage = (value / 50) * 100; // Convert to percentage
+function debounce(func, delay) {
+    let timeout;
+    return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+    };
+}
+
+// Use debounce for volume slider
+volumeSlider.addEventListener('input', debounce(() => {
+    const value = volumeSlider.value;
+    const percentage = (value / 50) * 100;
 
     // Update the slider's background
     volumeSlider.style.background = `linear-gradient(to right, green 0%, green ${percentage}%, #ccc ${percentage}%, #ccc 100%)`;
 
-    // Optionally, send the volume value to the server
-    setVolume(value);
-});
+    setVolume(value); // Send the volume command to the server
+}, 300));
 
 instanceDropdown.onchange = () => instanceChanged();
 browseButton.onclick = () => toggleBrowse();
 
-thumbsUpButton.onclick = () => {
-    const isActive = thumbsUpButton.classList.contains('active');
-    const command = isActive ? 'ThumbsUp Off' : 'ThumbsUp On';
+function toggleButtonState(button, commandOn, commandOff) {
+    const isActive = button.classList.contains('active');
+    const command = isActive ? commandOff : commandOn;
     sendCommand(command);
-    thumbsUpButton.classList.toggle('active', !isActive);
-    thumbsUpButton.classList.toggle('inactive', isActive);
-};
+    button.classList.toggle('active', !isActive);
+    button.classList.toggle('inactive', isActive);
+}
 
-thumbsDownButton.onclick = () => {
-    const isActive = thumbsDownButton.classList.contains('active');
-    const command = isActive ? 'ThumbsDown Off' : 'ThumbsDown On';
-    sendCommand(command);
-    thumbsDownButton.classList.toggle('active', !isActive);
-    thumbsDownButton.classList.toggle('inactive', isActive);
-};
-
-shuffleButton.onclick = () => {
-    const isActive = shuffleButton.classList.contains('active');
-    const command = isActive ? 'Shuffle Off' : 'Shuffle On';
-    sendCommand(command);
-    shuffleButton.classList.toggle('active', !isActive);
-    shuffleButton.classList.toggle('inactive', isActive);
-};
-
-repeatButton.onclick = () => {
-    const isActive = repeatButton.classList.contains('active');
-    const command = isActive ? 'Repeat Off' : 'Repeat On';
-    sendCommand(command);
-    repeatButton.classList.toggle('active', !isActive);
-    repeatButton.classList.toggle('inactive', isActive);
-};
+// Assign handlers
+thumbsUpButton.onclick = () => toggleButtonState(thumbsUpButton, 'ThumbsUp On', 'ThumbsUp Off');
+thumbsDownButton.onclick = () => toggleButtonState(thumbsDownButton, 'ThumbsDown On', 'ThumbsDown Off');
+shuffleButton.onclick = () => toggleButtonState(shuffleButton, 'Shuffle On', 'Shuffle Off');
+repeatButton.onclick = () => toggleButtonState(repeatButton, 'Repeat On', 'Repeat Off');
 
 skipPrevButton.onclick = () => sendCommand('SkipPrevious');
 skipNextButton.onclick = () => sendCommand('SkipNext');
 
 const playPauseButton = document.getElementById('playPauseButton');
 //playPauseButton.onclick = () => togglePlayPause();
-
-
-
 
 socket.onopen = () => {
     console.log(`🌐 WebSocket connected with clientID: ${clientID}`);
@@ -126,22 +113,16 @@ socket.onmessage = (event) => {
 
         switch (data.type) {
             case 'browse':
-                renderBrowse(data.items);
-                updateBrowsePath();
+                renderBrowse(data.items); // Render the browse items
+                renderBrowsePath(browsePath); // Update the browse path
                 break;
 
             case 'instances':
                 populateInstances(data.instances);
                 break;
 
-            case 'keyValue':
-                if (data.key === 'Instance') {
-                    currentInstance = data.value.replace(/"/g, '');
-                } else if (data.key === 'TopMenu' && data.value === 'Ok') {
-                    browsePath = [];
-                    updateBrowsePath();
-                    console.log(`🔄 Browse path set to Top menu`);
-                }
+            case 'keyValue':  //not used in the current code.  changes communicated via stateChanged
+                console.log(`❓ Unused key value received: ${data.key} : ${data.value})`);
                 break;
 
             case 'getStatus':
@@ -150,36 +131,34 @@ socket.onmessage = (event) => {
                 baseWebUrl = data.data.baseWebUrl || '';
 
                 const {
-                    trackName,
-                    artistName,
-                    mediaName,
-                    nowPlayingGuid: newNowPlayingGuid,
-                    trackDuration,
-                    trackTime,
-                    playState,
-                    trackQueueIndex,
-                    totalTracks,
-                    shuffle = false,
-                    repeat = false,
-                    thumbsUp = false,
-                    thumbsDown = false,
                     volume = 50,
                     mute = false,
-                    thumbsUpAvailable = false,
-                    thumbsDownAvailable = false,
+                    trackName = 'Nothing Playing',
+                    artistName = 'Unknown Artist',
+                    mediaName = 'Unknown Album',
+                    nowPlayingGuid: newNowPlayingGuid,
+                    trackDuration = 0,
+                    trackTime = 0,
+                    playState = 'Stopped',
+                    trackQueueIndex = 0,
+                    totalTracks = 0,
+                    thumbsUp = -1,
+                    thumbsDown = -1,
+                    shuffle = false,
+                    repeat = false,
+                    seekAvailable = false,
+                    playPauseAvailable = true,
                     shuffleAvailable = false,
                     repeatAvailable = false,
                     skipNextAvailable = false,
                     skipPrevAvailable = false,
-                    playPauseAvailable = false,
-                    seekAvailable: isSeekAvailable = false,
                 } = data.data;
 
                 // Update global nowPlayingGuid
                 nowPlayingGuid = newNowPlayingGuid || nowPlayingGuid;
 
                 // Update now-playing UI
-                document.getElementById('trackName').textContent = trackName || 'Nothing playing';
+                document.getElementById('trackName').textContent = trackName || 'Nothing Playing';
                 document.getElementById('artistName').textContent = artistName || 'Unknown Artist';
                 document.getElementById('mediaName').textContent = mediaName || 'Unknown Album';
                 document.getElementById('queueInfo').textContent = `Track ${trackQueueIndex} of ${totalTracks}`;
@@ -189,26 +168,26 @@ socket.onmessage = (event) => {
                 albumArt.src = nowPlayingGuid && baseWebUrl ? `${baseWebUrl}GetArt?guid=${nowPlayingGuid}` : '';
                 albumArt.alt = trackName || 'No Album Art';
 
-                // Update other UI state
-                seekAvailable = data.data.seekAvailable || false;
-                elapsed = data.data.trackTime || 0;
-                duration = data.data.trackDuration || 0;
-                currentState = data.data.playState || 'Stopped';
+                elapsed = data.data.trackTime;
+                duration = data.data.trackDuration;
+                currentState = data.data.playState;
+                isSeekAvailable = data.data.seekAvailable;
+
                 lastUpdate = Date.now();
 
-                updatePlaybackProgress();
-                updateControlButtons({
+                updateControlButtons(
+                    playState,
                     thumbsUp,
                     thumbsDown,
                     repeat,
                     shuffle,
+                    playPauseAvailable,
                     shuffleAvailable,
                     repeatAvailable,
                     skipNextAvailable,
                     skipPrevAvailable,
-                    playState,
-                });
-                updatePlayPauseButton(playState, playPauseAvailable);
+                );
+                updatePlaybackProgress();
                 updateVolumeFromServer(mute, volume); // Update volume and mute state
                 break;
 
@@ -216,6 +195,91 @@ socket.onmessage = (event) => {
                 if (data.instance !== currentInstance) return;
 
                 const events = data.events;
+
+                if (!events) return; // Ignore if no events
+
+                // Update thumbs up state
+                if (events.ThumbsUp !== undefined) {
+                    if (events.ThumbsUp === -1) {
+                        thumbsUpButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        thumbsUpButton.classList.remove('hidden'); // Show if available
+                        thumbsUpButton.textContent = '👍'; // Set the thumbs-up icon
+                        thumbsUpButton.classList.toggle('inactive', events.ThumbsUp === 0); // Gray out if inactive
+                        thumbsUpButton.classList.toggle('active', events.ThumbsUp === 1); // Mark as active if active
+                    }
+                }
+
+                // Update thumbs down state
+                if (events.ThumbsDown !== undefined) {
+                    if (events.ThumbsDown === -1) {
+                        thumbsDownButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        thumbsDownButton.classList.remove('hidden'); // Show if available
+                        thumbsDownButton.textContent = '👎'; // Set the thumbs-down icon
+                        thumbsDownButton.classList.toggle('inactive', events.ThumbsDown === 0); // Gray out if inactive
+                        thumbsDownButton.classList.toggle('active', events.ThumbsDown === 1); // Mark as active if active
+                    }
+                }
+
+                // Update shuffle state
+                if (events.ShuffleAvailable !== undefined) {
+                    if (!events.ShuffleAvailable) {
+                        shuffleButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        shuffleButton.classList.remove('hidden'); // Show if available
+                        shuffleButton.textContent = '🔀'; // Set the shuffle icon
+                        shuffleButton.classList.toggle('inactive', !events.Shuffle); // Gray out if inactive
+                        shuffleButton.classList.toggle('active', events.Shuffle); // Mark as active if active
+                    }
+                }
+
+                // Update repeat state
+                if (events.RepeatAvailable !== undefined) {
+                    if (!events.RepeatAvailable) {
+                        repeatButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        repeatButton.classList.remove('hidden'); // Show if available
+                        repeatButton.textContent = '🔁'; // Set the repeat icon
+                        repeatButton.classList.toggle('inactive', !events.Repeat); // Gray out if inactive
+                        repeatButton.classList.toggle('active', events.Repeat); // Mark as active if active
+                    }
+                }
+
+                // Update skip previous state
+                if (events.SkipPrevAvailable !== undefined) {
+                    if (!events.SkipPrevAvailable) {
+                        skipPrevButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        skipPrevButton.classList.remove('hidden'); // Show if available
+                        skipPrevButton.textContent = '⏮️'; // Set the skip-previous icon
+                    }
+                }
+
+                // Update skip next state
+                if (events.SkipNextAvailable !== undefined) {
+                    if (!events.SkipNextAvailable) {
+                        skipNextButton.classList.add('hidden'); // Hide if unavailable
+                    } else {
+                        skipNextButton.classList.remove('hidden'); // Show if available
+                        skipNextButton.textContent = '⏭️'; // Set the skip-next icon
+                    }
+                }
+
+                // Update play/pause availability
+                if (events.PlayPauseAvailable !== undefined) {
+                    updatePlayPauseButton(currentState, events.PlayPauseAvailable);
+                }
+
+                // Update seek availability
+                if (events.SeekAvailable !== undefined) {
+                    isSeekAvailable = events.SeekAvailable;
+                    document.getElementById('progressBar').disabled = !isSeekAvailable;
+                }
+
+                // Update playback progress if TrackTime or TrackDuration is present
+                if (events.TrackTime !== undefined) elapsed = parseInt(events.TrackTime, 10);
+                if (events.TrackDuration !== undefined) duration = parseInt(events.TrackDuration, 10);
 
                 // Handle MediaArtChanged event
                 if (events.MediaArtChanged && nowPlayingGuid) {
@@ -233,7 +297,7 @@ socket.onmessage = (event) => {
 
                 // Update now-playing details if TrackQueueIndex or TotalTracks are present
                 if (events.TrackQueueIndex || events.TotalTracks) {
-                    document.getElementById('queueInfo').textContent = `Track ${events.TrackQueueIndex || 0} of ${events.TotalTracks || 0}'}`;
+                    document.getElementById('queueInfo').textContent = `Track ${events.TrackQueueIndex || 0} of ${events.TotalTracks || 0}`;
                 }
 
                 // Update album art if NowPlayingGuid is present
@@ -245,10 +309,6 @@ socket.onmessage = (event) => {
                 }
 
                 // Update other playback information
-                if (events.TrackTime) elapsed = parseInt(events.TrackTime, 10);
-                if (events.TrackDuration) duration = parseInt(events.TrackDuration, 10);
-                if (events.PlayState) currentState = events.PlayState;
-
                 if (events.ArtistName) {
                     document.getElementById('artistName').textContent = events.ArtistName; // Ensure ArtistName is updated
                 }
@@ -259,13 +319,13 @@ socket.onmessage = (event) => {
                     document.getElementById('trackName').textContent = events.TrackName;
                 }
                 if (events.Mute !== undefined) {
-                    const muteButton = document.getElementById('muteButton');
                     muteButton.classList.toggle('active', events.Mute); // Add 'active' class when mute is on
                     muteButton.textContent = events.Mute ? '🔇' : '🔊'; // Update button text
                 }
                 if (events.Volume) {
                     updateVolumeFromServer(events.Mute, events.Volume); // Update volume and mute state
                 }
+
                 lastUpdate = Date.now();
 
                 // Update progress bar and timer
@@ -408,8 +468,8 @@ function instanceChanged() {
     updateBrowse();
 }
 
-function sendCommand(item) {
-    if (!currentInstance) {
+function sendCommand(item, instance = currentInstance) {
+    if (!instance) {
         alert('Select an instance first.');
         return;
     }
@@ -417,7 +477,7 @@ function sendCommand(item) {
     const message = {
         type: 'command',
         item: item || '',
-        instance: currentInstance,
+        instance: instance,
         clientID: clientID,
     };
 
@@ -425,49 +485,37 @@ function sendCommand(item) {
     socket.send(JSON.stringify(message));
 }
 
-function updateControlButtons({
+function updateButtonState(button, isAvailable, isActive, icon) {
+    if (!isAvailable) {
+        button.classList.add('hidden');
+    } else {
+        button.classList.remove('hidden');
+        button.textContent = icon;
+        button.classList.toggle('inactive', !isActive);
+        button.classList.toggle('active', isActive);
+    }
+}
+
+// Use the helper function in updateControlButtons
+function updateControlButtons(
+    playState,
     thumbsUp,
     thumbsDown,
     repeat,
     shuffle,
+    playPauseAvailable,
     shuffleAvailable,
     repeatAvailable,
     skipNextAvailable,
     skipPrevAvailable,
-    playState,
-}) {
-    // Thumbs Up Button
-    thumbsUpButton.textContent = thumbsUp === 1 ? '👍' : '👍🏻'; // Filled for active, outline for inactive
-    thumbsUpButton.style.color = thumbsUp === -1 ? '#ccc' : thumbsUp === 1 ? 'green' : 'gray'; // Gray for inactive, green for active, light gray for unavailable
-    thumbsUpButton.classList.toggle('disabled', thumbsUp === -1); // Disabled if not available
-
-    // Thumbs Down Button
-    thumbsDownButton.textContent = thumbsDown === 1 ? '👎' : '👎🏻'; // Filled for active, outline for inactive
-    thumbsDownButton.style.color = thumbsDown === -1 ? '#ccc' : thumbsDown === 1 ? 'red' : 'gray'; // Gray for inactive, red for active, light gray for unavailable
-    thumbsDownButton.classList.toggle('disabled', thumbsDown === -1); // Disabled if not available
-
-    // Shuffle Button
-    shuffleButton.textContent = shuffle ? '🔀 x' : '🔀'; // Add 'x' when active
-    shuffleButton.classList.toggle('active', shuffle);
-    shuffleButton.classList.toggle('inactive', !shuffle);
-    shuffleButton.classList.toggle('disabled', !shuffleAvailable);
-
-    // Repeat Button
-    repeatButton.textContent = repeat ? '🔁 x' : '🔁'; // Add 'x' when active
-    repeatButton.classList.toggle('active', repeat);
-    repeatButton.classList.toggle('inactive', !repeat);
-    repeatButton.classList.toggle('disabled', !repeatAvailable);
-
-    // Skip Previous Button
-    skipPrevButton.textContent = '⏮️';
-    skipPrevButton.classList.toggle('disabled', !skipPrevAvailable);
-
-    // Play/Pause Button
-    playPauseButton.textContent = playState === 'Playing' ? '⏸️' : '▶️';
-
-    // Skip Next Button
-    skipNextButton.textContent = '⏭️';
-    skipNextButton.classList.toggle('disabled', !skipNextAvailable);
+) {
+    updateButtonState(thumbsUpButton, thumbsUp !== -1, thumbsUp === 1, '👍');
+    updateButtonState(thumbsDownButton, thumbsDown !== -1, thumbsDown === 1, '👎');
+    updateButtonState(shuffleButton, shuffleAvailable, shuffle, '🔀');
+    updateButtonState(repeatButton, repeatAvailable, repeat, '🔁');
+    updateButtonState(skipPrevButton, skipPrevAvailable, true, '⏮️');
+    updateButtonState(skipNextButton, skipNextAvailable, true, '⏭️');
+    updatePlayPauseButton(playState, playPauseAvailable);
 }
 
 function updateVolumeFromServer(mute, volume) {
@@ -481,63 +529,41 @@ function updateVolumeFromServer(mute, volume) {
     console.log(`🔊 Volume updated: ${volume} (${percentage}%)`);
 }
 
-function updatePlaybackProgress() {
-    clearInterval(timer);
-
+function updateProgressBar(elapsed, duration) {
     const progressBar = document.getElementById('progressBar');
     const progressElapsed = document.getElementById('progressElapsed');
     const progressDot = document.getElementById('progressDot');
     const elapsedTimeElement = document.getElementById('elapsedTime');
     const totalTimeElement = document.getElementById('totalTime');
 
-    // Calculate progress percentage
     const pct = duration > 0 ? (elapsed / duration) * 100 : 0;
 
-    // Update elapsed bar width and dot position
+    // Update progress bar and time display
     progressElapsed.style.width = `${pct}%`;
     progressDot.style.left = `${pct}%`;
-
-    // Update elapsed and total time display
     elapsedTimeElement.textContent = formatTime(elapsed);
     totalTimeElement.textContent = formatTime(duration);
-
-    // Enable or disable the progress bar based on global seekAvailable
-    progressBar.disabled = !seekAvailable;
-
-    // Start the timer if the playback is in the "Playing" state
-    if (currentState === 'Playing') {
-        timer = setInterval(() => {
-            const now = Date.now();
-            elapsed += Math.floor((now - lastUpdate) / 1000);
-            lastUpdate = now;
-
-            const pct = duration > 0 ? (elapsed / duration) * 100 : 0;
-            progressElapsed.style.width = `${pct}%`;
-            progressDot.style.left = `${pct}%`;
-            elapsedTimeElement.textContent = formatTime(elapsed);
-            totalTimeElement.textContent = formatTime(duration);
-        }, 1000);
-    }
 }
 
-/*
-function togglePlayPause() {
-    const playPauseButton = document.getElementById('playPauseButton');
-    const isPlaying = playPauseButton.textContent === '⏸️'; // Check if the current state is "Playing"
+function updatePlaybackProgress() {
+    updatePlaybackProgress = () => {
+        clearInterval(timer);
 
-    console.log(`📤 Sending ${isPlaying ? 'Pause' : 'Play'} command`);
-    sendCommand(isPlaying ? 'Pause' : 'Play'); // Send the appropriate command
+        updateProgressBar(elapsed, duration);
 
-    // Update the button text and state
-    playPauseButton.textContent = isPlaying ? '▶️' : '⏸️';
+        if (currentState === 'Playing') {
+            timer = setInterval(() => {
+                const now = Date.now();
+                elapsed += Math.floor((now - lastUpdate) / 1000);
+                lastUpdate = now;
+                updateProgressBar(elapsed, duration);
+            }, 1000);
+        }
+    };
 }
-*/
 
 function updatePlayPauseButton(playState, playPauseAvailable) {
     const playPauseButton = document.getElementById('playPauseButton');
-
-    // Always show the Play/Pause button
-    playPauseButton.style.display = 'inline-block';
 
     if (playState === 'Playing') {
         console.log('🔄 Setting PlayPauseButton to Pause');
@@ -679,26 +705,6 @@ function getNormalizedParentType(parent) {
     return typeMap[parent?.type] || parent?.type;
 }
 
-function fetchBrowse(guid = null, name = null, item = null, addToPath = true) {
-    if (addToPath && guid) {
-        browsePath.push({ guid, name, item });
-    } else if (!guid) {
-        browsePath = [];
-    }
-
-    const message = {
-        type: 'browse',
-        guid: guid || null,
-        name: name || '',
-        item: item || '',
-        instance: currentInstance,
-        clientID: clientID,
-    };
-
-    console.log('🌐 Sending browse request via WebSocket:', message);
-    socket.send(JSON.stringify(message));
-}
-
 function processAlbumArtQueue() {
     if (isProcessingQueue || albumArtQueue.size === 0) {
         //console.log('ℹ️ No items to process in albumArtQueue. Queue size:', albumArtQueue.size);
@@ -738,6 +744,31 @@ function processAlbumArtQueue() {
         });
 }
 
+function fetchBrowse(guid = null, name = null, item = null, addToPath = true) {
+    if (addToPath && guid) {
+        // Add the new segment to the path
+        browsePath.push({ guid, name, item });
+    } else if (!guid) {
+        // Reset the path if no GUID is provided
+        browsePath = [];
+    }
+
+    const message = {
+        type: 'browse',
+        guid: guid || null,
+        name: name || '',
+        item: item || '',
+        instance: currentInstance,
+        clientID: clientID,
+    };
+
+    console.log('🌐 Sending browse request via WebSocket:', message);
+    socket.send(JSON.stringify(message));
+
+    // Update the browse path UI
+    renderBrowsePath(browsePath);
+}
+
 function renderBrowse(items) {
     const container = document.getElementById('browseItems');
     container.innerHTML = '';
@@ -746,8 +777,6 @@ function renderBrowse(items) {
         container.innerHTML = '<p>No items found</p>';
         return;
     }
-
-    //console.log('✅ Browse items rendered:', items);
 
     // Render all items
     items.forEach((item) => {
@@ -770,8 +799,11 @@ function renderBrowse(items) {
         img.style.objectFit = 'cover';
         img.style.marginRight = '1rem';
         img.style.borderRadius = '4px';
-        img.src = albumArtCache[item.guid] || ''; // Use cached URL if available
-        img.setAttribute('data-guid', item.guid); // Add data-guid for identification
+
+        // Use artGuid for album art if available, otherwise fallback to guid
+        const artGuid = item.artGuid || item.guid;
+        img.src = albumArtCache[artGuid] || ''; // Use cached URL if available
+        img.setAttribute('data-guid', artGuid); // Add data-guid for identification
         div.appendChild(img);
 
         // Add item name
@@ -782,7 +814,7 @@ function renderBrowse(items) {
 
         div.style.cursor = 'pointer';
         div.onclick = () => {
-            //console.log('🧭 Clicked:', item);
+            // Fetch browse data for the clicked item
             fetchBrowse(item.guid, item.name, item.type);
         };
 
@@ -793,21 +825,86 @@ function renderBrowse(items) {
     setupIntersectionObserver();
 }
 
-function updateBrowsePath() {
-    const pathContainer = document.getElementById('browsePath');
-    pathContainer.innerHTML = '<span class="path-segment" onclick="fetchBrowse(null, \'\', \'\', false)">Home</span>';
+function setupIntersectionObserver() {
+    const container = document.getElementById('browseItems');
+    const items = container.querySelectorAll('.browse-item');
 
-    browsePath.forEach((item, index) => {
-        const span = document.createElement('span');
-        span.className = 'path-segment';
-        span.textContent = item.name;
-        span.onclick = () => {
-            // Slice the browsePath up to the clicked level
-            browsePath = browsePath.slice(0, index + 1);
+    // Create an Intersection Observer
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                const item = entry.target;
+                const img = item.querySelector('img');
+                const guid = img ? img.getAttribute('data-guid') : null;
 
-            // Fetch the items for the clicked level
-            fetchBrowse(item.guid, item.name, item.type, false); // Do not re-add to path
-        };
-        pathContainer.appendChild(span);
+                if (guid && !albumArtCache[guid]) {
+                    // Fetch album art for the visible item
+                    const albumArtUrl = `${baseWebUrl}GetArt?guid=${guid}`;
+                    fetch(albumArtUrl)
+                        .then((response) => {
+                            if (response.ok) {
+                                albumArtCache[guid] = albumArtUrl; // Cache the URL
+                                img.src = albumArtUrl; // Update the image source
+                            } else {
+                                console.error(`❌ Failed to fetch album art for GUID: ${guid}`);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error(`❌ Error fetching album art for GUID: ${guid}`, error);
+                        });
+                }
+            }
+        });
+    }, {
+        root: container, // Observe within the scrollable container
+        rootMargin: '0px', // No margin around the viewport
+        threshold: 0.1, // Trigger when 10% of the item is visible
     });
+
+    // Observe each item
+    items.forEach((item) => observer.observe(item));
+}
+
+function renderBrowsePath(path) {
+    const pathContainer = document.getElementById('browsePath');
+    pathContainer.innerHTML = ''; // Clear the existing path
+
+    // Always include "Home" as the root
+    const homeSpan = document.createElement('span');
+    homeSpan.className = 'path-segment';
+    homeSpan.textContent = 'Home';
+    homeSpan.onclick = () => {
+        browsePath = []; // Reset the path to the top level
+        fetchBrowse(null, '', '', false); // Fetch the top-level items
+    };
+    pathContainer.appendChild(homeSpan);
+
+    if (Array.isArray(path) && path.length > 0) {
+        // Add a separator after "Home"
+        const separator = document.createElement('span');
+        separator.textContent = ' > ';
+        pathContainer.appendChild(separator);
+
+        // Render each segment of the path
+        path.forEach((segment, index) => {
+            const span = document.createElement('span');
+            span.className = 'path-segment';
+            span.textContent = segment.name;
+            span.onclick = () => {
+                // Slice the browsePath up to the clicked level
+                browsePath = browsePath.slice(0, index + 1);
+
+                // Fetch the items for the clicked level
+                fetchBrowse(segment.guid, segment.name, segment.item, false); // Do not re-add to path
+            };
+            pathContainer.appendChild(span);
+
+            // Add a separator if this is not the last segment
+            if (index < path.length - 1) {
+                const separator = document.createElement('span');
+                separator.textContent = ' > ';
+                pathContainer.appendChild(separator);
+            }
+        });
+    }
 }

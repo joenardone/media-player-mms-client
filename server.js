@@ -141,15 +141,19 @@ async function parseListXml(xml) {
 
   return items.map(item => {
     const attrs = item.$ || item;
+    const guid = attrs.guid || attrs.id; // Use guid or id as fallback
+    const artGuid = attrs.artGuid || guid; // Prioritize artGuid, fallback to guid
+
     return {
-      guid: attrs.guid || attrs.id,
-      name: attrs.name || attrs.title || 'Unnamed',
-      type: childTag,
-      hasChildren: attrs.hasChildren === '1',
-      hasArt: attrs.hasArt === '1',
-      browseAction: attrs.browseAction || null
+        guid,
+        name: attrs.name || attrs.title || 'Unnamed',
+        type: childTag,
+        hasChildren: attrs.hasChildren === '1',
+        hasArt: attrs.hasArt === '1',
+        artGuid, // Include artGuid in the response
+        browseAction: attrs.browseAction || null
     };
-  });
+});
 }
 
 function initializeMMSClient() {
@@ -269,7 +273,6 @@ function processGetStatusBuffer(buffer) {
   broadcastToClients({ type: 'getStatus', instance, data: parsedData });
   console.log(`📤 Sent GetStatus data to clients:`, parsedData);
 }
-
 
 async function processMMSBuffer(mmsBuffer, timeoutHandle) {
   let getStatusBuffer = ''; // Buffer for GetStatus responses
@@ -404,8 +407,13 @@ async function processMMSBuffer(mmsBuffer, timeoutHandle) {
               } else if (value.startsWith('http')) {
                 events[key] = value; // Keep URLs as-is
               } else {
-                events[key] = value === 'True' ? true : value === 'False' ? false : value; // Convert 'True'/'False' to boolean
-              }
+                // Convert 'True'/'False' to boolean, and specific keys like ThumbsUp/ThumbsDown to integers
+                if (key === 'ThumbsUp' || key === 'ThumbsDown') {
+                    events[key] = parseInt(value, 10); // Convert to integer
+                } else {
+                    events[key] = value === 'True' ? true : value === 'False' ? false : value; // Default conversion
+                }
+            }
             });
           }
 
@@ -427,8 +435,9 @@ async function processMMSBuffer(mmsBuffer, timeoutHandle) {
       if (keyValueMatch) {
         const key = keyValueMatch[1];
         const value = keyValueMatch[2];
-        broadcastToClients({ type: 'keyValue', key, value });
-
+        //broadcastToClients({ type: 'keyValue', key, value });
+        //console.log(`key value received: ${data.key} : ${data.value})`);
+        
         // Clear the timeout after processing
         if (timeoutHandle) {
           clearTimeout(timeoutHandle);

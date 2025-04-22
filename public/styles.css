@@ -55,66 +55,6 @@ button.disabled {
   cursor: not-allowed; /* Change cursor to indicate disabled state */
 }
 
-/* Active button style */
-button.active {
-  background-color: #4caf50; /* Green background for active state */
-  color: white;
-}
-
-/* Inactive button style */
-button.inactive {
-  background-color: transparent;
-  border: 2px solid white; /* White outline */
-  color: white;
-  position: relative;
-  display: flex; /* Use flexbox for centering */
-  align-items: center; /* Vertically center content */
-  justify-content: center; /* Horizontally center content */
-}
-
-button.inactive::after {
-  content: '✖';
-  color: red;
-  font-size: 20px; /* Adjust size for better visibility */
-  position: absolute;
-  inset: 0; /* Fill the button */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none; /* Ensure the "X" does not interfere with button clicks */
-  z-index: 2; /* Ensure the "X" is above the button content */
-}
-
-button.inactive svg {
-  opacity: 0.3; /* Dim the button's icon when inactive */
-}
-
-/* Ensure the dropdown and button have the same size */
-#instance,
-#browseButton {
-  width: 150px; /* Set a fixed width for both buttons */
-  height: 40px; /* Ensure consistent height */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem; /* Match font size */
-  background: #333; /* Add background color */
-  color: white; /* Text color */
-  border: 1px solid #444; /* Border for buttons and dropdowns */
-  border-radius: 4px; /* Rounded corners */
-  cursor: pointer;
-  transition: background 0.3s ease, color 0.3s ease;
-}
-
-#browseButton:hover {
-  background: #444; /* Darken background on hover */
-}
-
-#browseButton.active {
-  background: #555; /* Darker background for active state */
-  color: #fff; /* Ensure text color remains white */
-}
-
 /* Controls Section */
 #controlsContainer {
   margin-top: 20px; /* Add spacing above the commands */
@@ -129,62 +69,57 @@ button.inactive svg {
   display: flex;
   align-items: center; /* Align items vertically */
   justify-content: center; /* Center-align all buttons */
-  gap: 1.5rem; /* Add spacing between buttons */
+  margin: 0 12px; /* Add consistent spacing between buttons */
 }
 
 #controls button {
-  width: 64px; /* Fixed button width */
-  height: 64px; /* Fixed button height */
-  background: none; /* Remove background color */
-  border: none; /* Remove borders */
+  width: 64px; /* Ensure all buttons have the same width */
+  height: 64px; /* Ensure all buttons have the same height */
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-  line-height: 1; /* Prevent text from affecting height */
-  font-size: 48px; /* Set consistent font size for text-based icons */
-  color: white; /* Ensure icons are white */
-  overflow: hidden; /* Prevent content overflow */
-  text-align: center; /* Center-align text */
+  margin: 0 12px; /* Add consistent spacing between buttons */
+  font-size: 48px; /* Ensure consistent icon size */
+  vertical-align: middle; /* Align buttons vertically */
+  background: none;
+  border: none;
+  cursor: default; /* Use default cursor for all buttons */
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  color: white;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#controls button.active {
+  color: #4caf50; /* Green for active state */
+  opacity: 1; /* Fully visible */
+}
+
+#controls button.inactive {
+  color: white; /* Default color */
+  opacity: 0.5; /* Gray out */
+}
+
+#controls button.hidden {
+  visibility: hidden; /* Hide the button but keep its space */
+  opacity: 0; /* Fully transparent */
+  pointer-events: none; /* Disable interaction */
+}
+
+#controls button:hover:not(.hidden) {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+#controls button:active:not(.hidden) {
+  transform: scale(1); /* Reset scale on click */
 }
 
 /* Remove individual margins */
 #thumbsDownButton,
 #shuffleButton,
-#skipNextButton,
-#muteButton {
+#skipNextButton{
   margin: 0; /* Remove individual margins */
-}
-
-#controls button:hover {
-  transform: scale(1.1);
-}
-
-#controls button:active {
-  transform: scale(1);
-}
-
-button.disabled svg {
-  opacity: 0.3; /* Dim icons for disabled buttons */
-}
-
-button.inactive {
-  background: none; /* Ensure no background for inactive buttons */
-  border: none; /* Remove borders */
-  position: relative;
-}
-
-button.inactive::after {
-  content: '✖';
-  color: red;
-  font-size: 16px; /* Adjust size for better visibility */
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none; /* Ensure the "X" does not interfere with button clicks */
-  z-index: 2; /* Ensure the "X" is above the button content */
 }
 
 #thumbsDownButton {
@@ -197,10 +132,6 @@ button.inactive::after {
 
 #skipNextButton {
   margin-right: 2rem; /* Add spacing to the right of the Thumbs Down button */
-}
-
-#muteButton {
-  margin-left: 2rem; /* Add spacing to the left of the Shuffle button */
 }
 
 /* Now Playing Section */
@@ -290,7 +221,36 @@ button.inactive::after {
 #volumeContainer {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center; /* Center-align all buttons */
+  margin: 0 12px; /* Add consistent spacing between buttons */
+}
+
+
+#muteButton {
+  width: 64px; /* Ensure all buttons have the same width */
+  height: 64px; /* Ensure all buttons have the same height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 12px; /* Add consistent spacing between buttons */
+  font-size: 48px; /* Ensure consistent icon size */
+  vertical-align: middle; /* Align buttons vertically */
+  background: none;
+  border: none;
+  cursor: default; /* Use default cursor for all buttons */
+  transition: transform 0.2s ease, opacity 0.3s ease;
+  color: white;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+#muteButton:hover {
+  transform: scale(1.1); /* Slightly enlarge on hover */
+}
+
+#muteButton:active {
+  transform: scale(1); /* Reset scale on click */
 }
 
 /* Style the volume slider track */
