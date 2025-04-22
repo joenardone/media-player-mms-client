@@ -220,6 +220,7 @@ async function parseXlm(rawData) {
 function parseGetStatus(rawData) {
   const getMatch = (pattern, fallback = '') => (rawData.match(pattern)?.[1] || fallback).trim();
   const getInt = (pattern, fallback = 0) => parseInt(rawData.match(pattern)?.[1] || fallback, 10);
+  const getBool = (pattern) => rawData.match(pattern)?.[1] === 'True';
 
   return {
     instance: getMatch(/InstanceName=([^\n\r]*)/, 'None'),
@@ -227,10 +228,24 @@ function parseGetStatus(rawData) {
     playState: getMatch(/PlayState=([^\n\r]*)/, 'Stopped'),
     trackName: getMatch(/TrackName=([^\n\r]*)/, ''),
     artistName: getMatch(/ArtistName=([^\n\r]*)/, ''),
-    albumName: getMatch(/MediaName=([^\n\r]*)/, ''),
+    mediaName: getMatch(/MediaName=([^\n\r]*)/, ''),
     trackDuration: getInt(/TrackDuration=(\d+)/),
     trackTime: getInt(/TrackTime=(\d+)/),
     nowPlayingGuid: getMatch(/NowPlayingGuid=\{([a-f0-9\-]{36})\}/i, '00000000-0000-0000-0000-000000000000'),
+    trackQueueIndex: getInt(/TrackQueueIndex=(\d+)/), // Parse TrackQueueIndex
+    totalTracks: getInt(/TotalTracks=(\d+)/), // Parse TotalTracks
+    shuffle: getBool(/Shuffle=(True|False)/, false),
+    repeat: getBool(/Repeat=(True|False)/, false),
+    thumbsUp: getInt(/ThumbsUp=(-1|0|1)/, -1), // Parse thumbsUp as -1, 0, or 1
+    thumbsDown: getInt(/ThumbsDown=(-1|0|1)/, -1), // Parse thumbsDown as -1, 0, or 1
+    volume: getInt(/Volume=(\d+)/, 50),
+    mute: getBool(/Mute=(True|False)/, false),
+    shuffleAvailable: getBool(/ShuffleAvailable=(True|False)/, false),
+    repeatAvailable: getBool(/RepeatAvailable=(True|False)/, false),
+    skipNextAvailable: getBool(/SkipNextAvailable=(True|False)/, false),
+    skipPrevAvailable: getBool(/SkipPrevAvailable=(True|False)/, false),
+    playPauseAvailable: getBool(/PlayPauseAvailable=(True|False)/, true),
+    seekAvailable: getBool(/SeekAvailable=(True|False)/, false),
   };
 }
 
@@ -247,7 +262,6 @@ function processGetStatusBuffer(buffer) {
   // Join the relevant lines back into a single string for parsing
   const parsedBuffer = relevantLines.join('\n');
 
-  // Parse the lines into a structured JSON object
   const instance = extractInstance(parsedBuffer);
   const parsedData = parseGetStatus(parsedBuffer);
 
@@ -256,164 +270,6 @@ function processGetStatusBuffer(buffer) {
   console.log(`📤 Sent GetStatus data to clients:`, parsedData);
 }
 
-/* Working Version
-
-async function processMMSBuffer(mmsBuffer, timeoutHandle) {
-  let getStatusBuffer = ''; // Buffer for GetStatus responses
-  let isProcessingGetStatus = false; // Flag to indicate GetStatus processing
-  let remainingBuffer = ''; // To store unprocessed or incomplete lines
-
-  // Append new data to the remaining buffer
-  mmsBuffer = remainingBuffer + mmsBuffer;
-
-  // Define a list of closing tags for XML detection
-  const closingTags = [
-    '</Instances>',
-    '</PickList>',
-    '</NowPlaying>',
-    '</Albums>',
-    '</Titles>',
-    '</Genres>',
-    '</Composers>',
-    '</Artists>',
-    '</RadioSources>',
-    '</RadioStations>',
-    '</RadioGenres>',
-  ];
-
-  // Process XML data if present
-  if (mmsBuffer.includes('<') && mmsBuffer.includes('>')) {
-    const xmlEndIndex = closingTags
-      .map((tag) => mmsBuffer.indexOf(tag))
-      .filter((index) => index !== -1)
-      .sort((a, b) => a - b)[0]; // Find the earliest closing tag
-
-    if (xmlEndIndex !== undefined) {
-      const xmlBlock = mmsBuffer.slice(0, xmlEndIndex + closingTags.find((tag) => mmsBuffer.includes(tag)).length);
-      mmsBuffer = mmsBuffer.slice(xmlEndIndex + closingTags.find((tag) => mmsBuffer.includes(tag)).length).trimStart();
-
-      try {
-        const parsed = await parseXlm(xmlBlock);
-        if (parsed.type === 'instances') {
-          broadcastToClients({ type: 'instances', instances: parsed.data });
-        } else if (parsed.type === 'browse') {
-          broadcastToClients({ type: 'browse', items: parsed.data });
-        } else {
-          broadcastToClients({ type: 'xml', data: parsed.data });
-        }
-
-        // Clear the timeout after processing
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-          timeoutHandle = null;
-        }
-      } catch (err) {
-        console.error('❌ Error parsing XML:', err);
-      }
-    }
-  }
-
-  // Handle non-XML data
-  if (isProcessingGetStatus || mmsBuffer.includes('ReportState')) {
-    // Start buffering for GetStatus on the first ReportState
-    if (!isProcessingGetStatus && mmsBuffer.includes('ReportState')) {
-      isProcessingGetStatus = true;
-    }
-
-    // Accumulate GetStatus data
-    getStatusBuffer += mmsBuffer;
-
-    // Check if the GetStatus response is complete
-    if (getStatusBuffer.includes('StateChanged') && getStatusBuffer.includes('GetStatus=Done')) {
-      processGetStatusBuffer(getStatusBuffer);
-
-      // Reset flags and buffers
-      getStatusBuffer = '';
-      isProcessingGetStatus = false;
-
-      // Clear the timeout after processing
-      if (timeoutHandle) {
-        clearTimeout(timeoutHandle);
-        timeoutHandle = null;
-      }
-
-      return ''; // Clear the buffer after processing GetStatus
-    } else {
-      // If GetStatus is incomplete, save it in the remaining buffer
-      remainingBuffer = getStatusBuffer;
-      return remainingBuffer;
-    }
-  }
-
-  // Handle standard commands when not processing GetStatus
-  if (!isProcessingGetStatus) {
-    // Process the buffer line by line
-    while (mmsBuffer.includes('\n')) {
-      const commandEndIndex = mmsBuffer.indexOf('\n'); // Find the end of the first line
-      const command = mmsBuffer.slice(0, commandEndIndex).trim(); // Extract the first line
-      mmsBuffer = mmsBuffer.slice(commandEndIndex + 1); // Remove the processed line from the buffer
-
-      // Handle StateChanged messages
-      if (command.startsWith('StateChanged')) {
-        const stateChangedMatch = command.match(/^StateChanged\s+(\S+)\s+(.+)$/);
-        if (stateChangedMatch) {
-          const instance = stateChangedMatch[1]; // Extract the instance
-          const stateData = stateChangedMatch[2]; // Extract the full value string
-
-          // Parse state data into key-value pairs
-          const events = {};
-          const keyValuePairs = stateData.match(/(\w+=[^=]+(?:\s[^=\s]+)*|[^=\s]+=[^=\s]+)/g);
-          if (keyValuePairs) {
-            keyValuePairs.forEach((pair) => {
-              const [key, ...valueParts] = pair.split('=');
-              const value = valueParts.join('=').trim(); // Rejoin in case the value contains '=' or spaces
-              events[key] = value;
-            });
-          }
-
-          console.log(`📤 StateChanged event for instance ${instance}:`, events);
-          broadcastToClients({ type: 'stateChanged', instance, events });
-
-          // Clear the timeout after processing
-          if (timeoutHandle) {
-            clearTimeout(timeoutHandle);
-            timeoutHandle = null;
-          }
-
-          continue; // Process the next line
-        }
-      }
-
-      // Match key-value pairs (e.g., "SubscribeEvents True")
-      const keyValueMatch = command.match(/^(\w+)\s+(.+)$/);
-      if (keyValueMatch) {
-        const key = keyValueMatch[1];
-        const value = keyValueMatch[2];
-        broadcastToClients({ type: 'keyValue', key, value });
-
-        // Clear the timeout after processing
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-          timeoutHandle = null;
-        }
-
-        continue; // Process the next line
-      }
-
-      // Handle unrecognized data
-      console.log(`❓ Unhandled data: "${command}"`);
-    }
-
-    // Save any remaining incomplete data in the buffer
-    remainingBuffer = mmsBuffer;
-    return remainingBuffer;
-  }
-
-  // Save any remaining incomplete data in the buffer
-  remainingBuffer = mmsBuffer;
-  return remainingBuffer;
-}
- */
 
 async function processMMSBuffer(mmsBuffer, timeoutHandle) {
   let getStatusBuffer = ''; // Buffer for GetStatus responses
@@ -473,17 +329,17 @@ async function processMMSBuffer(mmsBuffer, timeoutHandle) {
       } catch (err) {
         console.error('❌ Error parsing XML:', err);
       }
-    } else {
+    } else if (!mmsBuffer.includes('StateChanged')) {
       // If the XML is incomplete, accumulate it in the XML buffer
       xmlBuffer += mmsBuffer;
-    
+
       // Log the current state of the buffer for debugging
       console.log('Accumulating incomplete XML data:', xmlBuffer);
-    
+
       // Save the remaining buffer for the next chunk
       remainingBuffer = mmsBuffer;
       return remainingBuffer; // Exit early to wait for the next chunk
-    }
+    } 
   }
 
 
@@ -541,7 +397,15 @@ async function processMMSBuffer(mmsBuffer, timeoutHandle) {
             keyValuePairs.forEach((pair) => {
               const [key, ...valueParts] = pair.split('=');
               const value = valueParts.join('=').trim(); // Rejoin in case the value contains '=' or spaces
-              events[key] = value;
+
+              // Handle complex values like UI=<...> or URLs
+              if (value.startsWith('<') && value.endsWith('>')) {
+                events[key] = value; // Keep the full value as-is
+              } else if (value.startsWith('http')) {
+                events[key] = value; // Keep URLs as-is
+              } else {
+                events[key] = value === 'True' ? true : value === 'False' ? false : value; // Convert 'True'/'False' to boolean
+              }
             });
           }
 
@@ -587,7 +451,6 @@ async function processMMSBuffer(mmsBuffer, timeoutHandle) {
   remainingBuffer = mmsBuffer;
   return remainingBuffer;
 }
-
 
 wss.on('connection', (ws, req) => {
   const clientID = new URLSearchParams(req.url.split('?')[1]).get('clientID');
@@ -758,7 +621,54 @@ function handleCommandRequest(data, clientID) {
     commands.push(`SubscribeEvents`);
   }
 
-  commands.push(item);
+  switch (item) {
+    case 'Repeat':
+      commands.push('Repeat');
+      break;
+    case 'Rewind':
+      commands.push('Rewind');
+      break;
+    case 'FastForward':
+      commands.push('FastForward');
+      break;
+    case 'Shuffle':
+      commands.push('Shuffle');
+      break;
+    case 'ThumbsUp':
+      commands.push('ThumbsUp');
+      break;
+    case 'ThumbsDown':
+      commands.push('ThumbsDown');
+      break;
+    case 'SkipNext':
+      commands.push('SkipNext');
+      break;
+    case 'SkipPrevious':
+      commands.push('SkipPrevious');
+    case 'Play':
+      commands.push('Play');
+      break;
+    case 'Pause':
+      commands.push('Pause');
+      break;
+    case 'PlayPause':
+      commands.push('PlayPause');
+      break;
+    case 'SetVolume':
+      const volumeLevel = item.split(' ')[1]; // Extract the volume level
+      commands.push(`SetVolume ${volumeLevel}`);
+      break;
+    case 'Mute':
+      const muteCommand = mute ? 'MUTE OFF' : 'MUTE ON'; // Toggle mute state
+      commands.push(muteCommand);
+      break;
+    case 'Seek':
+      const seekTime = item.split(' ')[1]; // Extract the time in seconds
+      commands.push(`Seek ${seekTime}`);
+      break;
+    default:
+      commands.push(item);
+  }
 
   ensureMMSConnection(() => {
     console.log(`▶️ Command for clientID ${clientID}: ${commands.join(' ➜ ')}`);

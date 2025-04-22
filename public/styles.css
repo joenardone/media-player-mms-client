@@ -1,126 +1,400 @@
+/* General Styles */
 body {
-    background: #1a1a1a;
-    color: white;
-    font-family: sans-serif;
-    padding: 2rem;
-    margin: 0;
-    overflow-x: hidden;
-  }
-  
-  header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-  }
-  
-  #title {
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  
-  #controls {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  
-  button,
-  select {
-    padding: 0.5rem 1rem;
-    margin: 0;
-    font-size: 1rem;
-  }
-  
-  #albumArt {
-    width: 300px;
-    height: 300px;
-    object-fit: cover;
-    margin: 1rem auto 0;
-    border-radius: 8px;
-    border: 2px solid #444;
-  }
-  
-  #trackInfo {
-    text-align: center;
-    margin-top: 1rem;
-    font-size: 1.2rem;
-  }
-  
-  #progressContainer {
-    width: 80%;
-    height: 10px;
-    background: #555;
-    margin: 1rem auto;
-    border-radius: 5px;
-    overflow: hidden;
-  }
-  
-  #progressBar {
-    height: 100%;
-    background: limegreen;
-    width: 0%;
-  }
-  
-  #browseContainer {
-    margin-top: 2rem;
-    text-align: left;
-  }
-  
-  #browseItems {
-    max-height: 500px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 0.5rem;
-    background: #222;
-    border-radius: 8px;
-    border: 1px solid #444;
-  }
-  
-  .browse-item {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    background: #333;
-    border-radius: 4px;
-    margin-bottom: 0.5rem;
-    transition: background 0.2s;
-  }
-  
-  .browse-item:hover {
-    background: #444;
-  }
-  
-  .browse-item img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    margin-right: 1rem;
-    border-radius: 4px;
-  }
-  
-  .browse-item span {
-    flex-grow: 1;
-    color: white;
-    font-size: 1rem;
-  }
-  
-  #browsePath {
-    margin: 1rem 0;
-    padding: 0.5rem;
-    background: #333;
-    color: white;
-    border-radius: 4px;
-    font-size: 1rem;
-  }
-  
-  .path-segment {
-    cursor: pointer;
-    color: #4af;
-    text-decoration: underline;
-    margin-right: 0.5rem;
-  }
-  
-  .path-segment:hover {
-    text-decoration: none;
-  }
+  background: #1a1a1a;
+  color: white;
+  font-family: sans-serif;
+  padding: 2rem;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: scroll; /* Always show the vertical scrollbar */
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+#title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+/* Header Controls */
+#headerControls {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Add spacing between the dropdown and the Browse button */
+}
+
+/* General styles for buttons and dropdowns in the header */
+.control-button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.control-button:hover {
+  background: #444;
+}
+
+.control-button:active {
+  background: #555;
+}
+
+/* Disabled button style */
+button.disabled {
+  opacity: 0.5; /* Make the button appear grayed out */
+  pointer-events: none; /* Disable interaction */
+  cursor: not-allowed; /* Change cursor to indicate disabled state */
+}
+
+/* Active button style */
+button.active {
+  background-color: #4caf50; /* Green background for active state */
+  color: white;
+}
+
+/* Inactive button style */
+button.inactive {
+  background-color: transparent;
+  border: 2px solid white; /* White outline */
+  color: white;
+  position: relative;
+  display: flex; /* Use flexbox for centering */
+  align-items: center; /* Vertically center content */
+  justify-content: center; /* Horizontally center content */
+}
+
+button.inactive::after {
+  content: '✖';
+  color: red;
+  font-size: 20px; /* Adjust size for better visibility */
+  position: absolute;
+  inset: 0; /* Fill the button */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* Ensure the "X" does not interfere with button clicks */
+  z-index: 2; /* Ensure the "X" is above the button content */
+}
+
+button.inactive svg {
+  opacity: 0.3; /* Dim the button's icon when inactive */
+}
+
+/* Ensure the dropdown and button have the same size */
+#instance,
+#browseButton {
+  width: 150px; /* Set a fixed width for both buttons */
+  height: 40px; /* Ensure consistent height */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem; /* Match font size */
+  background: #333; /* Add background color */
+  color: white; /* Text color */
+  border: 1px solid #444; /* Border for buttons and dropdowns */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+#browseButton:hover {
+  background: #444; /* Darken background on hover */
+}
+
+#browseButton.active {
+  background: #555; /* Darker background for active state */
+  color: #fff; /* Ensure text color remains white */
+}
+
+/* Controls Section */
+#controlsContainer {
+  margin-top: 20px; /* Add spacing above the commands */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Align controls to the left */
+  gap: 1.5rem; /* Add consistent spacing between controls */
+  min-width: 100%; /* Ensure the container spans the full width */
+}
+
+#controls {
+  display: flex;
+  align-items: center; /* Align items vertically */
+  justify-content: center; /* Center-align all buttons */
+  gap: 1.5rem; /* Add spacing between buttons */
+}
+
+#controls button {
+  width: 64px; /* Fixed button width */
+  height: 64px; /* Fixed button height */
+  background: none; /* Remove background color */
+  border: none; /* Remove borders */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  line-height: 1; /* Prevent text from affecting height */
+  font-size: 48px; /* Set consistent font size for text-based icons */
+  color: white; /* Ensure icons are white */
+  overflow: hidden; /* Prevent content overflow */
+  text-align: center; /* Center-align text */
+}
+
+/* Remove individual margins */
+#thumbsDownButton,
+#shuffleButton,
+#skipNextButton,
+#muteButton {
+  margin: 0; /* Remove individual margins */
+}
+
+#controls button:hover {
+  transform: scale(1.1);
+}
+
+#controls button:active {
+  transform: scale(1);
+}
+
+button.disabled svg {
+  opacity: 0.3; /* Dim icons for disabled buttons */
+}
+
+button.inactive {
+  background: none; /* Ensure no background for inactive buttons */
+  border: none; /* Remove borders */
+  position: relative;
+}
+
+button.inactive::after {
+  content: '✖';
+  color: red;
+  font-size: 16px; /* Adjust size for better visibility */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; /* Ensure the "X" does not interfere with button clicks */
+  z-index: 2; /* Ensure the "X" is above the button content */
+}
+
+#thumbsDownButton {
+  margin-right: 2rem; /* Add spacing to the right of the Thumbs Down button */
+}
+
+#shuffleButton {
+  margin-left: 1rem; /* Add spacing to the left of the Shuffle button */
+}
+
+#skipNextButton {
+  margin-right: 2rem; /* Add spacing to the right of the Thumbs Down button */
+}
+
+#muteButton {
+  margin-left: 2rem; /* Add spacing to the left of the Shuffle button */
+}
+
+/* Now Playing Section */
+#nowPlayingContainer {
+  display: flex;
+  align-items: flex-start;
+  min-height: 220px; /* Set a minimum height to match the album art */
+  margin-bottom: 20px;
+}
+
+#albumArt {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 20px;
+  border: 2px solid #444;
+}
+
+#trackName {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+#artistName {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+#mediaName {
+  font-size: 20px;
+  color: gray;
+  margin-bottom: 10px;
+}
+
+#queueInfo {
+  font-size: 18px;
+  color: gray;
+}
+
+/* Progress Bar */
+#progressContainer {
+  margin-bottom: 20px; /* Add consistent spacing below the progress bar */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%; /* Ensure the progress bar spans the full width */
+}
+
+#elapsedTime,
+#totalTime {
+  font-size: 14px;
+  color: white;
+}
+
+#progressBar {
+  flex-grow: 1;
+  height: 10px;
+  background: #555;
+  margin: 0 10px;
+  position: relative;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#progressElapsed {
+  height: 100%;
+  background: #4caf50;
+  width: 0%;
+}
+
+#progressDot {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  background: #4caf50;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* Volume Slider */
+#volumeContainer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Style the volume slider track */
+#volumeSlider {
+  -webkit-appearance: none; /* Remove default styling */
+  width: 100%; /* Full width */
+  height: 8px; /* Track height */
+  background: linear-gradient(to right, green 0%, green 50%, #ccc 50%, #ccc 100%);
+  border-radius: 4px; /* Rounded edges */
+  outline: none; /* Remove focus outline */
+  transition: background 0.3s ease; /* Smooth transition */
+}
+
+/* Style the slider thumb */
+#volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Remove default styling */
+  appearance: none;
+  width: 16px; /* Thumb width */
+  height: 16px; /* Thumb height */
+  background: #fff; /* Thumb color */
+  border: 2px solid green; /* Thumb border */
+  border-radius: 50%; /* Rounded thumb */
+  cursor: pointer; /* Pointer cursor */
+  transition: background 0.3s ease, border 0.3s ease; /* Smooth transition */
+}
+
+#volumeSlider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 2px solid green;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#volumeSlider::-ms-thumb {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border: 2px solid green;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* Browse Section */
+#browseContainer {
+  margin-top: 2rem;
+  text-align: left;
+}
+
+#browseItems {
+  max-height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.5rem;
+  background: #222;
+  border-radius: 8px;
+  border: 1px solid #444;
+}
+
+.browse-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem;
+  background: #333;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  transition: background 0.2s;
+}
+
+.browse-item:hover {
+  background: #444;
+}
+
+.browse-item img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  margin-right: 1rem;
+  border-radius: 4px;
+}
+
+.browse-item span {
+  flex-grow: 1;
+  color: white;
+  font-size: 1rem;
+}
+
+#browsePath {
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: #333;
+  color: white;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.path-segment {
+  cursor: pointer;
+  color: #4af;
+  text-decoration: underline;
+  margin-right: 0.5rem;
+}
+
+.path-segment:hover {
+  text-decoration: none;
+}

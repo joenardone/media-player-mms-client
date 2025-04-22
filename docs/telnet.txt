@@ -1,0 +1,53 @@
+telnet 192.168.162.64 5004  
+
+BrowseTopMenu
+BrowseNowPlaying
+
+BrowseInstances	-  gets the zone names
+SetInstance	- Selects a specific Media Center Instance for further commands.
+GetStatus	- Returns all parameters that are normally sent with a StateChanged. Used to prime local client variables.
+
+
+SubscribeEvents	- Turns on or off Events (i.e. track information, transport feedback,etc.) for the current instance.
+
+SkipNext	- Skip Next transport control.
+SkipPrevious	- Skip Previous transport control.
+
+
+Commands/Responses
+
+BrowseInstances                                                                                                         
+BeginInstances Total=5 Start=1 Alpha=0 Caption="Instances"                                                                
+Guest_House_1                                                                                                           
+Guest_House_2                                                                                                           
+Main_House_1                                                                                                            
+Main_House_2                                                                                                            
+Main_House_3                                                                                                          
+EndInstances NoMore  
+
+SetInstance Main_House_2
+
+SetPickListCount 100000
+SetInstance Main_House_2
+
+
+SetXmlMode Lists
+SetEncoding 65001
+
+
+<PickList total="6" start="1" more="false" art="false" alpha="false" displayAs="List" caption="Home Menu"><PickItem guid="6e6f7770-0000-00
+00-0000-6c6179696e67" name="Now Playing Queue" dna="name" hasChildren="1" hasArt="0" button="0" /><PickItem guid="6d796d75-0000-0000-0000-736963000000" name="My Music" dna="name" hasChildren="1" hasArt="0" button="0" /><PickItem guid="72656365-0000-0000-0000-74756e656400" nam
+e="Recently Tuned" dna="name" hasChildren="1" hasArt="0" button="0" /><PickItem guid="fbbcedb1-af64-4c3f-bfe5-000000000010" name="Pandora Internet Radio" dna="name" hasChildren="1" hasArt="0" button="0" /><PickItem guid="fbbcedb1-af64-4c3f-bfe5-000000000008" name="SiriusXM In
+ternet Radio" dna="name" hasChildren="1" hasArt="0" button="0" /><PickItem guid="fbbcedb1-af64-4c3f-bfe5-000000000100" name="Spotify" dna="name" hasChildren="1" hasArt="0" button="0" /></PickList>                                                                                
+TopMenu Ok 
+
+AckPickItem 6d796d75-0000-0000-0000-736963000000
+
+<PickList total="5" start="1" more="false" art="false" alpha="false" displayAs="List" caption="My Music"><PickItem guid="bd9b0153-7fa9-646
+1-980e-952fec00af9b" name="Albums" dna="name" hasChildren="1" hasArt="0" button="0" tlm="1" /><PickItem guid="805edf1b-a4fe-6da0-4b27-d73c
+e9af1d10" name="Artists" dna="name" hasChildren="1" hasArt="0" button="0" tlm="1" /><PickItem guid="f9bcf0fe-c63e-baae-51c1-374e61ddd13d"
+name="Composers" dna="name" hasChildren="1" hasArt="0" button="0" tlm="1" /><PickItem guid="7d5425ae-03e0-c38c-63c6-fe74d7b66c19" name="Ge
+nres" dna="name" hasChildren="1" hasArt="0" button="0" tlm="1" /><PickItem guid="0f40f076-d0b6-1fc3-6815-6e29a02e3513" name="Songs" dna="n
+ame" hasChildren="1" hasArt="0" button="0" tlm="1" /></PickList>                                                                          
+
+AckPickItem Ok
