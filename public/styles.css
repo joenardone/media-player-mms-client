@@ -16,7 +16,8 @@ header {
   margin-bottom: 2rem;
 }
 
-#title {
+#title,
+#nowPlayingSrceName {
   font-size: 2rem;
   font-weight: bold;
 }
@@ -151,19 +152,22 @@ button.disabled {
   border: 2px solid #444;
 }
 
-#trackName {
+#trackName,
+#metaData4 {
   font-size: 28px;
   font-weight: bold;
   margin-bottom: 10px;
 }
 
-#artistName {
+#artistName,
+#metataData2 {
   font-size: 22px;
   font-weight: bold;
   margin-bottom: 5px;
 }
 
-#mediaName {
+#mediaName,
+#metataData3 {
   font-size: 20px;
   color: gray;
   margin-bottom: 10px;

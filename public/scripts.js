@@ -152,16 +152,48 @@ socket.onmessage = (event) => {
                     repeatAvailable = false,
                     skipNextAvailable = false,
                     skipPrevAvailable = false,
+                    // New fields
+                    metaLabel1 = '',
+                    metaData1 = '',
+                    metaLabel2 = '',
+                    metaData2 = '',
+                    metaLabel3 = '',
+                    metaData3 = '',
+                    metaLabel4 = '',
+                    metaData4 = '',
+                    nowPlayingType = '',
+                    nowPlayingSrce = '',
+                    nowPlayingSrceName = '',
                 } = data.data;
+
+                /*  Metadata Events               
+                    There are four lines of metadata and four metadata labels.
+                    MetaData1 is generally reserved for radio station names or for track count data.
+                    MetaData2 is generally reserved for the artist name.
+                    MetaData3 is generally reserved for the album name.
+                    MetaData4 is generally reserved for the track name.
+                */
 
                 // Update global nowPlayingGuid
                 nowPlayingGuid = newNowPlayingGuid || nowPlayingGuid;
 
                 // Update now-playing UI
-                document.getElementById('trackName').textContent = trackName || 'Nothing Playing';
-                document.getElementById('artistName').textContent = artistName || 'Unknown Artist';
-                document.getElementById('mediaName').textContent = mediaName || 'Unknown Album';
-                document.getElementById('queueInfo').textContent = `Track ${trackQueueIndex} of ${totalTracks}`;
+                //document.getElementById('trackName').textContent = trackName || 'Nothing Playing';
+                //document.getElementById('artistName').textContent = artistName || 'Unknown Artist';
+                //document.getElementById('mediaName').textContent = mediaName || 'Unknown Album';
+
+                // Update metadata UI
+                //document.getElementById('metaLabel1').textContent = metaLabel1 || '';
+                document.getElementById('metaData1').textContent = metaData1 || '';
+                //document.getElementById('metaLabel2').textContent = metaLabel2 || '';
+                document.getElementById('metaData2').textContent = metaData2 || '';
+                //document.getElementById('metaLabel3').textContent = metaLabel3 || '';
+                document.getElementById('metaData3').textContent = metaData3 || '';
+                //document.getElementById('metaLabel4').textContent = metaLabel4 || '';
+                document.getElementById('metaData4').textContent = metaData4 || '';
+                //document.getElementById('nowPlayingType').textContent = nowPlayingType || '';
+                //document.getElementById('nowPlayingSrce').textContent = nowPlayingSrce || '';
+                document.getElementById('nowPlayingSrceName').textContent = nowPlayingSrceName || '';
 
                 // Update album art
                 const albumArt = document.getElementById('albumArt');
@@ -191,146 +223,135 @@ socket.onmessage = (event) => {
                 updateVolumeFromServer(mute, volume); // Update volume and mute state
                 break;
 
-            case 'stateChanged':
-                if (data.instance !== currentInstance) return;
-
-                const events = data.events;
-
-                if (!events) return; // Ignore if no events
-
-                // Update thumbs up state
-                if (events.ThumbsUp !== undefined) {
-                    if (events.ThumbsUp === -1) {
-                        thumbsUpButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        thumbsUpButton.classList.remove('hidden'); // Show if available
-                        thumbsUpButton.textContent = '👍'; // Set the thumbs-up icon
-                        thumbsUpButton.classList.toggle('inactive', events.ThumbsUp === 0); // Gray out if inactive
-                        thumbsUpButton.classList.toggle('active', events.ThumbsUp === 1); // Mark as active if active
+                case 'stateChanged':
+                    if (data.instance !== currentInstance) return;
+                
+                    const events = data.events;
+                
+                    if (!events) return; // Ignore if no events
+                
+                    // Update thumbs up state
+                    if (events.ThumbsUp !== undefined) {
+                        thumbsUpButton.classList.toggle('hidden', events.ThumbsUp === -1); // Hide if unavailable
+                        if (events.ThumbsUp !== -1) {
+                            thumbsUpButton.textContent = '👍'; // Set the thumbs-up icon
+                            thumbsUpButton.classList.toggle('inactive', events.ThumbsUp === 0); // Gray out if inactive
+                            thumbsUpButton.classList.toggle('active', events.ThumbsUp === 1); // Mark as active if active
+                        }
                     }
-                }
-
-                // Update thumbs down state
-                if (events.ThumbsDown !== undefined) {
-                    if (events.ThumbsDown === -1) {
-                        thumbsDownButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        thumbsDownButton.classList.remove('hidden'); // Show if available
-                        thumbsDownButton.textContent = '👎'; // Set the thumbs-down icon
-                        thumbsDownButton.classList.toggle('inactive', events.ThumbsDown === 0); // Gray out if inactive
-                        thumbsDownButton.classList.toggle('active', events.ThumbsDown === 1); // Mark as active if active
+                
+                    // Update thumbs down state
+                    if (events.ThumbsDown !== undefined) {
+                        thumbsDownButton.classList.toggle('hidden', events.ThumbsDown === -1); // Hide if unavailable
+                        if (events.ThumbsDown !== -1) {
+                            thumbsDownButton.textContent = '👎'; // Set the thumbs-down icon
+                            thumbsDownButton.classList.toggle('inactive', events.ThumbsDown === 0); // Gray out if inactive
+                            thumbsDownButton.classList.toggle('active', events.ThumbsDown === 1); // Mark as active if active
+                        }
                     }
-                }
-
-                // Update shuffle state
-                if (events.ShuffleAvailable !== undefined) {
-                    if (!events.ShuffleAvailable) {
-                        shuffleButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        shuffleButton.classList.remove('hidden'); // Show if available
-                        shuffleButton.textContent = '🔀'; // Set the shuffle icon
-                        shuffleButton.classList.toggle('inactive', !events.Shuffle); // Gray out if inactive
-                        shuffleButton.classList.toggle('active', events.Shuffle); // Mark as active if active
+                
+                    // Update shuffle state
+                    if (events.ShuffleAvailable !== undefined) {
+                        shuffleButton.classList.toggle('hidden', !events.ShuffleAvailable); // Hide if unavailable
+                        if (events.ShuffleAvailable) {
+                            shuffleButton.textContent = '🔀'; // Set the shuffle icon
+                            shuffleButton.classList.toggle('inactive', !events.Shuffle); // Gray out if inactive
+                            shuffleButton.classList.toggle('active', events.Shuffle); // Mark as active if active
+                        }
                     }
-                }
-
-                // Update repeat state
-                if (events.RepeatAvailable !== undefined) {
-                    if (!events.RepeatAvailable) {
-                        repeatButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        repeatButton.classList.remove('hidden'); // Show if available
-                        repeatButton.textContent = '🔁'; // Set the repeat icon
-                        repeatButton.classList.toggle('inactive', !events.Repeat); // Gray out if inactive
-                        repeatButton.classList.toggle('active', events.Repeat); // Mark as active if active
+                
+                    // Update repeat state
+                    if (events.RepeatAvailable !== undefined) {
+                        repeatButton.classList.toggle('hidden', !events.RepeatAvailable); // Hide if unavailable
+                        if (events.RepeatAvailable) {
+                            repeatButton.textContent = '🔁'; // Set the repeat icon
+                            repeatButton.classList.toggle('inactive', !events.Repeat); // Gray out if inactive
+                            repeatButton.classList.toggle('active', events.Repeat); // Mark as active if active
+                        }
                     }
-                }
-
-                // Update skip previous state
-                if (events.SkipPrevAvailable !== undefined) {
-                    if (!events.SkipPrevAvailable) {
-                        skipPrevButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        skipPrevButton.classList.remove('hidden'); // Show if available
-                        skipPrevButton.textContent = '⏮️'; // Set the skip-previous icon
+                
+                    // Update skip previous state
+                    if (events.SkipPrevAvailable !== undefined) {
+                        skipPrevButton.classList.toggle('hidden', !events.SkipPrevAvailable); // Hide if unavailable
+                        if (events.SkipPrevAvailable) {
+                            skipPrevButton.textContent = '⏮️'; // Set the skip-previous icon
+                        }
                     }
-                }
-
-                // Update skip next state
-                if (events.SkipNextAvailable !== undefined) {
-                    if (!events.SkipNextAvailable) {
-                        skipNextButton.classList.add('hidden'); // Hide if unavailable
-                    } else {
-                        skipNextButton.classList.remove('hidden'); // Show if available
-                        skipNextButton.textContent = '⏭️'; // Set the skip-next icon
+                
+                    // Update skip next state
+                    if (events.SkipNextAvailable !== undefined) {
+                        skipNextButton.classList.toggle('hidden', !events.SkipNextAvailable); // Hide if unavailable
+                        if (events.SkipNextAvailable) {
+                            skipNextButton.textContent = '⏭️'; // Set the skip-next icon
+                        }
                     }
-                }
-
-                // Update play/pause availability
-                if (events.PlayPauseAvailable !== undefined) {
-                    updatePlayPauseButton(currentState, events.PlayPauseAvailable);
-                }
-
-                // Update seek availability
-                if (events.SeekAvailable !== undefined) {
-                    isSeekAvailable = events.SeekAvailable;
-                    document.getElementById('progressBar').disabled = !isSeekAvailable;
-                }
-
-                // Update playback progress if TrackTime or TrackDuration is present
-                if (events.TrackTime !== undefined) elapsed = parseInt(events.TrackTime, 10);
-                if (events.TrackDuration !== undefined) duration = parseInt(events.TrackDuration, 10);
-
-                // Handle MediaArtChanged event
-                if (events.MediaArtChanged && nowPlayingGuid) {
-                    const albumArt = document.getElementById('albumArt');
-                    albumArt.src = `${baseWebUrl}GetArt?guid=${nowPlayingGuid}&timestamp=${Date.now()}`; // Add timestamp to bypass cache
-                    console.log(`🔄 Refreshed album art for GUID: ${nowPlayingGuid}`);
-                }
-
-                // Handle PlayState event
-                if (events.PlayState && events.PlayState !== currentState) {
-                    currentState = events.PlayState; // Update the global playback state
-                    console.log(`🎵 Playback state updated to: ${currentState}`);
-                    updatePlayPauseButton(currentState, events.PlayPauseAvailable);
-                }
-
-                // Update now-playing details if TrackQueueIndex or TotalTracks are present
-                if (events.TrackQueueIndex || events.TotalTracks) {
-                    document.getElementById('queueInfo').textContent = `Track ${events.TrackQueueIndex || 0} of ${events.TotalTracks || 0}`;
-                }
-
-                // Update album art if NowPlayingGuid is present
-                if (events.NowPlayingGuid) {
-                    const albumArt = document.getElementById('albumArt');
-                    albumArt.src = `${baseWebUrl}GetArt?guid=${events.NowPlayingGuid}&timestamp=${Date.now()}`; // Add timestamp to bypass cache
-                    albumArt.alt = events.TrackName || 'No Album Art';
-                    nowPlayingGuid = events.NowPlayingGuid; // Update the global nowPlayingGuid
-                }
-
-                // Update other playback information
-                if (events.ArtistName) {
-                    document.getElementById('artistName').textContent = events.ArtistName; // Ensure ArtistName is updated
-                }
-                if (events.MediaName) {
-                    document.getElementById('mediaName').textContent = events.MediaName; // Ensure MediaName is updated
-                }
-                if (events.TrackName) {
-                    document.getElementById('trackName').textContent = events.TrackName;
-                }
-                if (events.Mute !== undefined) {
-                    muteButton.classList.toggle('active', events.Mute); // Add 'active' class when mute is on
-                    muteButton.textContent = events.Mute ? '🔇' : '🔊'; // Update button text
-                }
-                if (events.Volume) {
-                    updateVolumeFromServer(events.Mute, events.Volume); // Update volume and mute state
-                }
-
-                lastUpdate = Date.now();
-
-                // Update progress bar and timer
-                updatePlaybackProgress();
-                break;
+                
+                    // Update play/pause availability
+                    if (events.PlayPauseAvailable !== undefined) {
+                        updatePlayPauseButton(currentState, events.PlayPauseAvailable);
+                    }
+                
+                    // Update seek availability
+                    if (events.SeekAvailable !== undefined) {
+                        isSeekAvailable = events.SeekAvailable;
+                        document.getElementById('progressBar').disabled = !isSeekAvailable;
+                    }
+                
+                    // Update playback progress if TrackTime or TrackDuration is present
+                    if (events.TrackTime !== undefined) elapsed = parseInt(events.TrackTime, 10);
+                    if (events.TrackDuration !== undefined) duration = parseInt(events.TrackDuration, 10);
+                
+                    // Handle MediaArtChanged event
+                    if (events.MediaArtChanged && nowPlayingGuid) {
+                        const albumArt = document.getElementById('albumArt');
+                        albumArt.src = `${baseWebUrl}GetArt?guid=${nowPlayingGuid}&timestamp=${Date.now()}`; // Add timestamp to bypass cache
+                        console.log(`🔄 Refreshed album art for GUID: ${nowPlayingGuid}`);
+                    }
+                
+                    // Handle PlayState event
+                    if (events.PlayState && events.PlayState !== currentState) {
+                        currentState = events.PlayState; // Update the global playback state
+                        console.log(`🎵 Playback state updated to: ${currentState}`);
+                        updatePlayPauseButton(currentState, events.PlayPauseAvailable);
+                    }
+                               
+                    // Update album art if NowPlayingGuid is present
+                    if (events.NowPlayingGuid !== undefined) {
+                        const albumArt = document.getElementById('albumArt');
+                        albumArt.src = `${baseWebUrl}GetArt?guid=${events.NowPlayingGuid}&timestamp=${Date.now()}`; // Add timestamp to bypass cache
+                        albumArt.alt = events.TrackName || 'No Album Art';
+                        nowPlayingGuid = events.NowPlayingGuid; // Update the global nowPlayingGuid
+                    }
+                
+     
+                    if (events.Mute !== undefined) {
+                        muteButton.classList.toggle('active', events.Mute); // Add 'active' class when mute is on
+                        muteButton.textContent = events.Mute ? '🔇' : '🔊'; // Update button text
+                    }
+                    if (events.Volume !== undefined) updateVolumeFromServer(events.Mute, events.Volume) || '';
+                    
+                
+                    // Update other playback information
+                    //if (events.ArtistName !== undefined) document.getElementById('artistName').textContent = events.ArtistName || '';
+                    //if (events.MediaName !== undefined) document.getElementById('mediaName').textContent = events.MediaName || '';                    
+                    //if (events.TrackName !== undefined) document.getElementById('trackName').textContent = events.TrackName || '';
+                    //if (events.MetaLabel1 !== undefined) document.getElementById('metaLabel1').textContent = events.MetaLabel1 || '';
+                    if (events.MetaData1 !== undefined) document.getElementById('metaData1').textContent = events.MetaData1 || '';
+                    //if (events.MetaLabel2 !== undefined) document.getElementById('metaLabel2').textContent = events.MetaLabel2 || '';
+                    if (events.MetaData2 !== undefined) document.getElementById('metaData2').textContent = events.MetaData2 || '';
+                    //if (events.MetaLabel3 !== undefined) document.getElementById('metaLabel3').textContent = events.MetaLabel3 || '';
+                    if (events.MetaData3 !== undefined) document.getElementById('metaData3').textContent = events.MetaData3 || '';
+                    //if (events.MetaLabel4 !== undefined) document.getElementById('metaLabel4').textContent = events.MetaLabel4 || '';
+                    if (events.MetaData4 !== undefined) document.getElementById('metaData4').textContent = events.MetaData4 || '';
+                    //if (events.NowPlayingType !== undefined) document.getElementById('nowPlayingType').textContent = events.NowPlayingType || '';
+                    //if (events.NowPlayingSrce !== undefined) document.getElementById('nowPlayingSrce').textContent = events.NowPlayingSrce || '';
+                    if (events.NowPlayingSrceName !== undefined) document.getElementById('nowPlayingSrceName').textContent = events.NowPlayingSrceName || '';
+                
+                    lastUpdate = Date.now();
+                
+                    // Update progress bar and timer
+                    updatePlaybackProgress();
+                    break;
 
             default:
                 console.warn(`❓ Unknown data type: ${data.type}`);
@@ -444,8 +465,14 @@ function renderBrowseItems(items) {
 }
 
 function populateInstances(instances) {
+    if (!Array.isArray(instances)) {
+        console.error('❌ Invalid instances data:', instances);
+        return;
+    }
+
     const select = document.getElementById('instance');
-    select.innerHTML = '';
+    select.innerHTML = ''; // Clear existing options
+
     instances.forEach((instance) => {
         const option = document.createElement('option');
         option.value = instance.name; // Use the actual name as the value
@@ -455,7 +482,7 @@ function populateInstances(instances) {
 
     // Set the first instance as the default
     currentInstance = select.value;
-    //console.log(`✅ Instances populated. Current instance: ${currentInstance}`);
+    console.log(`✅ Instances populated. Current instance: ${currentInstance}`);
     sendCommand(`SetInstance ${currentInstance}`);
     updateBrowse();
 }
@@ -745,6 +772,7 @@ function processAlbumArtQueue() {
 }
 
 function fetchBrowse(guid = null, name = null, item = null, addToPath = true) {
+
     if (addToPath && guid) {
         // Add the new segment to the path
         browsePath.push({ guid, name, item });
@@ -764,7 +792,25 @@ function fetchBrowse(guid = null, name = null, item = null, addToPath = true) {
 
     console.log('🌐 Sending browse request via WebSocket:', message);
     socket.send(JSON.stringify(message));
+    /*
+    // Reset the browse path to "Home" if the item is "PlayTitle"
+    if (item === 'PlayTitle') {
+        console.log('🔄 Moving browse path up one level for PlayTitle');
+        // Remove the last two segments of the browse path
+        browsePath.pop();
+        browsePath.pop();
 
+        // If there's a new last segment, fetch its items
+        if (browsePath.length > 0) {
+            const lastSegment = browsePath[browsePath.length - 1];
+            fetchBrowse(lastSegment.guid, lastSegment.name, lastSegment.item, false); // Fetch without adding to path
+        } else {
+            // If the path is empty, fetch the top-level items
+            fetchBrowse(null, '', '', false);
+        }
+        
+        }
+        */
     // Update the browse path UI
     renderBrowsePath(browsePath);
 }
