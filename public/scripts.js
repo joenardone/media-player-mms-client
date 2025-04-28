@@ -92,7 +92,7 @@ document.getElementById('progressBar').addEventListener('click', (event) => {
         item: `Seek ${seekTime}`,
         instance: currentInstance,
     };
-    console.log(`📤 Sending Seek command: ${seekTime} seconds`);
+    //console.log(`📤 Sending Seek command: ${seekTime} seconds`);
     sendCommand(`Seek ${seekTime}`);
 
     // Update trackTime time immediately
@@ -355,10 +355,10 @@ function updatePlaybackProgress() {
 
 function updatePlayPauseButton() {
     if (playState) {   //Stopped = 0, Play = 1, Pause = 2, Streaming = 3';
-        console.log('🔄 Setting PlayPauseButton to Pause');
+        //console.log('🔄 Setting PlayPauseButton to Pause');
 
         playPauseButton.textContent = '⏸️';
-        console.log('Set icon to:', playPauseButton.textContent);
+        //console.log('Set icon to:', playPauseButton.textContent);
 
         playPauseButton.onclick = () => {
             if (playPauseAvailable) {
@@ -368,10 +368,10 @@ function updatePlayPauseButton() {
             }
         };
     } else {
-        console.log('🔄 Setting PlayPauseButton to Play');
+       //console.log('🔄 Setting PlayPauseButton to Play');
 
         playPauseButton.textContent = '▶️';
-        console.log('Set icon to:', playPauseButton.textContent);
+        //console.log('Set icon to:', playPauseButton.textContent);
 
         playPauseButton.onclick = () => {
             if (playPauseAvailable) {
@@ -386,7 +386,7 @@ function updatePlayPauseButton() {
 
 function seekPlayback(value) {
     const seekTime = Math.round((value / 100) * duration); // Convert percentage to seconds
-    console.log(`📤 Sending Seek command: ${seekTime} seconds`);
+    //console.log(`📤 Sending Seek command: ${seekTime} seconds`);
     sendCommand(`Seek ${seekTime}`);
 }
 
@@ -515,7 +515,7 @@ async function fetchBrowse(guid, name, type, action, addToPath = false) {
     type = getBrowseTypeFromName(name) || type; // Update type based on the item name, fallback to the provided type
     let browseCommand = getBrowseCommandFromName(name);
 
-    console.log(`fetchBrowse: guid =${guid}, name = ${name}, type = ${type},  action = ${action}, addToPath = ${addToPath}`);
+    //console.log(`fetchBrowse: guid =${guid}, name = ${name}, type = ${type},  action = ${action}, addToPath = ${addToPath}`);
 
     //console.log(`fetchBrowse: guid =${guid}, name = ${name}, type = ${type},  prevType = ${prevType}, browseCommand = ${browseCommand}, action = ${action}, addToPath = ${addToPath}`);
 
@@ -818,7 +818,7 @@ function renderBrowse(items) {
         div.style.cursor = 'pointer';
         div.onclick = () => {
             if (item.listAction && item.listAction.startsWith('Initiate')) {
-                console.log(`📤 Initiating search for: ${item.listAction}`);
+                //console.log(`📤 Initiating search for: ${item.listAction}`);
                 // Extract search type, e.g., 'Album' from 'Initiate AlbumSearch'
                 const searchType = item.listAction.split(' ')[1] || 'Album';
                 showSearchModal(searchType);
