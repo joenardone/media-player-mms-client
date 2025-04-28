@@ -1,5 +1,5 @@
 # MediaPlayer
-Autonomic Media Player  - Local-Only client
+Autonomic Media Player - Local offline client
 
 Non-hosted client for Autonmics MMS-5E.  
 Autonomic Controls
