@@ -1,3 +1,6 @@
+Query Autonomics Server:  http://192.168.162.64/upnp/DevDesc/0.xml
+
+
 Autonomic Controls Media Control Server version 6.6.20240516.0 Release.
 More info found on the Web http://www.Autonomic-Controls.com
 Type '?' for help or 'help <command>' for help on <command>.

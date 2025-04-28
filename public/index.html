@@ -10,7 +10,11 @@
 
 <body>
   <header>
-    <div id="nowPlayingSrceName">SiriusXM Internet Radio</div>
+    <div id="nowPlayingHeader">
+      <img id="nowPlayingSourceArt" src="" alt="" style="width:36px;height:32px;vertical-align:middle;">
+      <span id="nowPlayingSrceName" style="font-size: 32px; line-height: 32px; vertical-align: middle;"></span>
+      <span id="nowPlayingAlbum" style="margin-left:1em;color:#aaa;"></span>
+    </div>
     <div id="headerControls">
       <select id="instance" class="control-button"></select>
       <button id="browseButton" class="control-button">📂 Browse</button>
@@ -51,6 +55,9 @@
       <label for="volumeSlider">Volume:</label>
       <input id="volumeSlider" type="range" min="0" max="50" step="1" onchange="setVolume(this.value)" />
     </div>
+    <div id="tuneBridgeContainer" style="display:flex; align-items:center; justify-content:flex-end; flex:1;">
+    <button id="tuneBridgeButton" title="TuneBridge" style="font-size:24px; margin-left:1em;">📎</button>
+  </div>
   </div>
 
   <div id="browseContainer">

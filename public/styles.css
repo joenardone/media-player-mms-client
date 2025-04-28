@@ -299,6 +299,29 @@ button.disabled {
   cursor: pointer;
 }
 
+#tuneBridgeContainer {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+#tuneBridgeButton {
+  background: #333;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  margin-left: 1em;
+  font-size: 24px;
+  transition: background 0.3s;
+}
+
+#tuneBridgeButton:hover {
+  background: #444;
+}
+
 /* Browse Section */
 #browseContainer {
   margin-top: 2rem;
