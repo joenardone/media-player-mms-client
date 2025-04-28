@@ -26,6 +26,7 @@ let skipPrevAvailable = false;
 let skipNextAvailable = false;
 
 let isTuneBridgeActive = false;
+let isBrowseQueueActive = false;
 
 let elapsed = 0;
 let duration = 0;
@@ -76,6 +77,9 @@ const metaData2Element = document.getElementById('metaData2');
 const metaData3Element = document.getElementById('metaData3');
 const metaData4Element = document.getElementById('metaData4');
 const nowPlayingSrceNameElement = document.getElementById('nowPlayingSrceName');
+
+const tuneBridgeButton = document.getElementById('tuneBridgeButton');
+const browseQueueButton = document.getElementById('browseQueueButton');
 
 const albumArtElement = document.getElementById('albumArt');
 
@@ -213,7 +217,9 @@ function toggleMute() {
 
 function toggleBrowse() {
     isTuneBridgeActive = false;
+    isBrowseQueueActive = false;
     tuneBridgeButton.classList.remove('active');
+    browseQueueButton.classList.remove('active');
 
     // Toggle the visibility of the browse container
     if (browseContainerElement.style.display === 'none') {
@@ -231,7 +237,7 @@ function toggleBrowse() {
     }
 }
 
-const tuneBridgeButton = document.getElementById('tuneBridgeButton');
+
 if (tuneBridgeButton) {
     tuneBridgeButton.onclick = async () => {
         const container = document.getElementById('browseContainer');
@@ -249,9 +255,43 @@ if (tuneBridgeButton) {
         } else {
             // Activate TuneBridge and show the window
             container.style.display = 'block';
+
+            isBrowseQueueActive = false;
+            tuneBridgeButton.classList.remove('active');
+            
             browseButton.classList.add('active');
             isTuneBridgeActive = true;
             await sendCommand('AckButton CONTEXT');
+        }
+    };
+}
+
+if (browseQueueButton) {
+    browseQueueButton.onclick = async () => {
+        const container = document.getElementById('browseContainer');
+        const isVisible = container.style.display === 'block';
+        // Check if Browse Queue is the current view
+        const isBrowseQueueView = isVisible &&
+            browsePath.length === 1 &&
+            browsePath[0].type === 'BrowseQueue';
+
+        if (isBrowseQueueView) {
+            // Close the window and deactivate
+            container.style.display = 'none';
+            browseButton.classList.remove('active');
+            isTuneBridgeActive = false;
+        } else {
+            // Activate Browse Queue and show the window
+            container.style.display = 'block';
+            
+            isTuneBridgeActive = false;
+            tuneBridgeButton.classList.remove('active');
+            
+            browseButton.classList.add('active');
+            isTuneBridgeActive = false;
+            // Set path and fetch queue
+            browsePath = [{ name: 'Queue', guid: null, type: 'BrowseQueue' }];
+            await sendCommand('BrowseNowPlaying 1 50');
         }
     };
 }
@@ -700,7 +740,8 @@ function renderBrowsePath(path) {
     homeSpan.className = 'path-segment';
     homeSpan.textContent = 'Home';
     homeSpan.onclick = () => {
-        isTuneBridgeActive = false; // <-- Add this line
+        isTuneBridgeActive = false;
+        isBrowseQueueActive = false;
         fetchBrowse(); // Fetch the top-level items
     };
     browsePathElement.appendChild(homeSpan);
@@ -716,7 +757,8 @@ function renderBrowsePath(path) {
             pathSpan.className = 'path-segment';
             pathSpan.textContent = segment.name;
             pathSpan.onclick = () => {
-                isTuneBridgeActive = false; // <-- Add this line
+                isTuneBridgeActive = false;
+                isBrowseQueueActive = false;
                 browsePath = browsePath.slice(0, index + 1);
                 fetchBrowse(segment.guid, segment.name, segment.type, false);
             };
@@ -737,6 +779,10 @@ function processBrowse(browse) {
             if (isTuneBridgeActive && browse.caption) {
                 browsePath = [{ name: browse.caption, guid: null, type: 'TuneBridge' }];
                 isTuneBridgeActive = false; // Reset after first use!
+            }
+            else if (isBrowseQueueActive && browse.caption) {
+                browsePath = [{ name: browse.caption, guid: null, type: 'Queue' }];
+                isBrowseQueueActive = false; // Reset after first use!
             }
             renderBrowse(browse.items);
             renderBrowsePath(browsePath);
@@ -905,9 +951,10 @@ window.onload = async function () {
 };
 
 async function initializeMmsClient() {
-    const initCommands = [
 
-        'SetClientType jsonApi',
+    const initCommands = [
+    
+        //'SetClientType jsonApi',
         //'SetClientVersion 1.0.0.0',
         'SetOption supports_urls=true',
         `SetHost ${CONFIG.BASE_IP}`,
